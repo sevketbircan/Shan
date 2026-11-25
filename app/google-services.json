@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "594032859951-cli7bsh0jmmf2q875e35ea1fhu1gakcv.apps.googleusercontent.com",
+          "client_id": "594032859951-45t9k6jne5a8btobvljih325dp4fpu97.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.aistudio.shanchat.kxmpzq",
-            "certificate_hash": "5819e14ace52cb1fc70850efa05637bcfda2e18b"
+            "certificate_hash": "613b05faedf197fa96eea0b705250da2d0b605be"
           }
         },
         {
