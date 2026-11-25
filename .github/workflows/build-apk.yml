@@ -1,0 +1,46 @@
+name: Build Shan Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Restore debug keystore for Firebase SHA-1 signing
+        run: base64 -d debug.keystore.base64 > debug.keystore
+
+      - name: Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Run unit tests
+        run: gradle :app:testDebugUnitTest --tests "com.example.ShanCryptoUnitTest" --tests "com.example.ExampleUnitTest"
+
+      - name: Build Debug APK
+        run: gradle :app:assembleDebug
+
+      - name: Upload Shan APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shan-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
