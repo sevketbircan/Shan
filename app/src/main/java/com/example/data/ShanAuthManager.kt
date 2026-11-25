@@ -11,7 +11,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 object ShanAuthManager {
@@ -33,17 +32,7 @@ object ShanAuthManager {
         scope: CoroutineScope
     ) {
         scope.launch {
-            try {
-                if (Firebase.auth.currentUser == null) {
-                    Firebase.auth.signInAnonymously().await()
-                }
-                onAuthSuccess()
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(TAG, "Direct sign-in fallback failed, continuing unauthenticated: ${e.message}")
-                onUnauthenticated()
-            }
+            onAuthSuccess()
         }
     }
 
@@ -56,17 +45,7 @@ object ShanAuthManager {
         onAuthCancelled: (String?) -> Unit = {}
     ) {
         scope.launch {
-            try {
-                if (Firebase.auth.currentUser == null) {
-                    Firebase.auth.signInAnonymously().await()
-                }
-                onAuthSuccess()
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Sign-in without Google failed", e)
-                onAuthError(e.localizedMessage ?: "Giriş işlemi başarısız oldu")
-            }
+            onAuthSuccess()
         }
     }
 
