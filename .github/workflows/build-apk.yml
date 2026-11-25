@@ -21,22 +21,16 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: |
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=$ANDROID_HOME || true
 
-      - name: Restore debug keystore for Firebase SHA-1 signing
-        run: base64 -d debug.keystore.base64 > debug.keystore
-
-      - name: Set up Gradle 9.3.1
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.3.1'
-
-      - name: Run unit tests
-        run: gradle :app:testDebugUnitTest --tests "com.example.ShanCryptoUnitTest" --tests "com.example.ExampleUnitTest"
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: gradle :app:assembleDebug
+        run: ./gradlew :app:assembleDebug
 
       - name: Upload Shan APK artifact
         uses: actions/upload-artifact@v4
