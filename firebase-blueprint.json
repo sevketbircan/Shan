@@ -1,0 +1,137 @@
+{
+  "entities": {
+    "ShanChannel": {
+      "title": "ShanChannel",
+      "description": "Two-person encrypted private communication channel metadata and public key slots.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "description": "Firebase Auth UID of channel creator." },
+        "memberUids": { "type": "array", "description": "Up to 2 authorized Firebase Auth UIDs." },
+        "slot1PublicKey": { "type": "string", "description": "Base64 X.509 ECDH P-256 public key for 20ss504." },
+        "slot2PublicKey": { "type": "string", "description": "Base64 X.509 ECDH P-256 public key for 20bs230." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update." }
+      },
+      "required": ["ownerUid", "memberUids", "createdAt", "updatedAt"]
+    },
+    "ShanPresence": {
+      "title": "ShanPresence",
+      "description": "Online presence and last-seen timestamp window for a Shan slot without exposing private nicknames.",
+      "type": "object",
+      "properties": {
+        "slotId": { "type": "string", "enum": ["20ss504", "20bs230"] },
+        "authUid": { "type": "string" },
+        "memberUids": { "type": "array" },
+        "online": { "type": "boolean" },
+        "publicKey": { "type": "string" },
+        "lastActiveMillis": { "type": "integer" },
+        "typing": { "type": "boolean" },
+        "typingAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slotId", "authUid", "memberUids", "online", "publicKey", "lastActiveMillis", "createdAt", "updatedAt"]
+    },
+    "ShanMessage": {
+      "title": "ShanMessage",
+      "description": "End-to-end encrypted 24-hour ephemeral message (text or encrypted media metadata).",
+      "type": "object",
+      "properties": {
+        "senderSlot": { "type": "string", "enum": ["20ss504", "20bs230"] },
+        "senderUid": { "type": "string" },
+        "memberUids": { "type": "array" },
+        "msgType": { "type": "string", "enum": ["TEXT", "IMAGE", "VIDEO", "FILE"] },
+        "ciphertext": { "type": "string" },
+        "iv": { "type": "string" },
+        "ephemeralKey": { "type": "string" },
+        "replyToId": { "type": "string" },
+        "replySenderSlot": { "type": "string", "enum": ["20ss504", "20bs230"] },
+        "replyCiphertext": { "type": "string" },
+        "replyIv": { "type": "string" },
+        "mediaChunkCount": { "type": "integer" },
+        "mediaMimeType": { "type": "string" },
+        "mediaSizeBytes": { "type": "integer" },
+        "edited": { "type": "boolean" },
+        "reactions": { "type": "object" },
+        "expiresAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderSlot", "senderUid", "memberUids", "msgType", "ciphertext", "iv", "ephemeralKey", "mediaChunkCount", "edited", "expiresAtMillis", "createdAt", "updatedAt"]
+    },
+    "ShanMediaChunk": {
+      "title": "ShanMediaChunk",
+      "description": "AES-256-GCM encrypted chunk of a shared photo, video, or file.",
+      "type": "object",
+      "properties": {
+        "senderUid": { "type": "string" },
+        "memberUids": { "type": "array" },
+        "chunkIndex": { "type": "integer" },
+        "dataCiphertext": { "type": "string" },
+        "dataIv": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "memberUids", "chunkIndex", "dataCiphertext", "dataIv", "createdAt"]
+    },
+    "ShanCall": {
+      "title": "ShanCall",
+      "description": "Encrypted WebRTC voice/video call signaling session.",
+      "type": "object",
+      "properties": {
+        "callerSlot": { "type": "string", "enum": ["20ss504", "20bs230"] },
+        "callerUid": { "type": "string" },
+        "calleeSlot": { "type": "string", "enum": ["20ss504", "20bs230"] },
+        "memberUids": { "type": "array" },
+        "callType": { "type": "string", "enum": ["VOICE", "VIDEO"] },
+        "status": { "type": "string", "enum": ["RINGING", "ACTIVE", "ENDED", "REJECTED"] },
+        "offerCiphertext": { "type": "string" },
+        "offerIv": { "type": "string" },
+        "answerCiphertext": { "type": "string" },
+        "answerIv": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["callerSlot", "callerUid", "calleeSlot", "memberUids", "callType", "status", "offerCiphertext", "offerIv", "createdAt", "updatedAt"]
+    },
+    "ShanIceCandidate": {
+      "title": "ShanIceCandidate",
+      "description": "Encrypted WebRTC ICE candidate.",
+      "type": "object",
+      "properties": {
+        "senderUid": { "type": "string" },
+        "senderSlot": { "type": "string", "enum": ["20ss504", "20bs230"] },
+        "memberUids": { "type": "array" },
+        "candidateCiphertext": { "type": "string" },
+        "candidateIv": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "senderSlot", "memberUids", "candidateCiphertext", "candidateIv", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/channels/{channelId}": {
+      "schema": { "$ref": "#/entities/ShanChannel" },
+      "description": "Two-person private encrypted channel."
+    },
+    "/channels/{channelId}/presence/{slotId}": {
+      "schema": { "$ref": "#/entities/ShanPresence" },
+      "description": "Presence and last-seen window for 20ss504 and 20bs230."
+    },
+    "/channels/{channelId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ShanMessage" },
+      "description": "Ephemeral 24-hour end-to-end encrypted chat messages."
+    },
+    "/channels/{channelId}/messages/{messageId}/chunks/{chunkId}": {
+      "schema": { "$ref": "#/entities/ShanMediaChunk" },
+      "description": "Encrypted media chunks for photos, videos, and files."
+    },
+    "/channels/{channelId}/calls/{callId}": {
+      "schema": { "$ref": "#/entities/ShanCall" },
+      "description": "Encrypted WebRTC call signaling."
+    },
+    "/channels/{channelId}/calls/{callId}/candidates/{candId}": {
+      "schema": { "$ref": "#/entities/ShanIceCandidate" },
+      "description": "Encrypted WebRTC ICE candidates."
+    }
+  }
+}

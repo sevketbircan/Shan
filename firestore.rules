@@ -1,0 +1,338 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidSlot(slot) {
+      return slot is string && (slot == '20ss504' || slot == '20bs230');
+    }
+
+    function isValidMemberUids(listVal) {
+      return listVal is list &&
+             listVal.size() >= 1 &&
+             listVal.size() <= 2 &&
+             listVal[0] is string &&
+             listVal[0].size() >= 1 &&
+             listVal[0].size() <= 128 &&
+             (listVal.size() == 1 || (listVal[1] is string && listVal[1].size() >= 1 && listVal[1].size() <= 128));
+    }
+
+    function isValidChannel(data) {
+      return data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 &&
+             isValidMemberUids(data.memberUids) &&
+             (!('slot1PublicKey' in data) || (data.slot1PublicKey is string && data.slot1PublicKey.size() <= 512)) &&
+             (!('slot2PublicKey' in data) || (data.slot2PublicKey is string && data.slot2PublicKey.size() <= 512)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPresence(data) {
+      return isValidSlot(data.slotId) &&
+             data.authUid is string && data.authUid.size() >= 1 && data.authUid.size() <= 128 &&
+             isValidMemberUids(data.memberUids) &&
+             data.online is bool &&
+             data.publicKey is string && data.publicKey.size() <= 512 &&
+             data.lastActiveMillis is int && data.lastActiveMillis >= 0 &&
+             (!('typing' in data) || data.typing is bool) &&
+             (!('typingAtMillis' in data) || (data.typingAtMillis is int && data.typingAtMillis >= 0)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMessage(data) {
+      return isValidSlot(data.senderSlot) &&
+             data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
+             isValidMemberUids(data.memberUids) &&
+             data.msgType is string && (data.msgType == 'TEXT' || data.msgType == 'IMAGE' || data.msgType == 'VIDEO' || data.msgType == 'FILE') &&
+             data.ciphertext is string && data.ciphertext.size() >= 1 && data.ciphertext.size() <= 120000 &&
+             data.iv is string && data.iv.size() >= 1 && data.iv.size() <= 64 &&
+             data.ephemeralKey is string && data.ephemeralKey.size() >= 1 && data.ephemeralKey.size() <= 256 &&
+             (!('replyToId' in data) || (data.replyToId is string && data.replyToId.size() <= 128)) &&
+             (!('replySenderSlot' in data) || isValidSlot(data.replySenderSlot)) &&
+             (!('replyCiphertext' in data) || (data.replyCiphertext is string && data.replyCiphertext.size() <= 8000)) &&
+             (!('replyIv' in data) || (data.replyIv is string && data.replyIv.size() <= 64)) &&
+             data.mediaChunkCount is int && data.mediaChunkCount >= 0 && data.mediaChunkCount <= 40 &&
+             (!('mediaMimeType' in data) || (data.mediaMimeType is string && data.mediaMimeType.size() <= 128)) &&
+             (!('mediaSizeBytes' in data) || (data.mediaSizeBytes is int && data.mediaSizeBytes >= 0 && data.mediaSizeBytes <= 15728640)) &&
+             data.edited is bool &&
+             (!('reactions' in data) || (data.reactions is map && data.reactions.size() <= 2)) &&
+             data.expiresAtMillis is int && data.expiresAtMillis > 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMediaChunk(data) {
+      return data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
+             isValidMemberUids(data.memberUids) &&
+             data.chunkIndex is int && data.chunkIndex >= 0 && data.chunkIndex < 40 &&
+             data.dataCiphertext is string && data.dataCiphertext.size() >= 1 && data.dataCiphertext.size() <= 750000 &&
+             data.dataIv is string && data.dataIv.size() >= 1 && data.dataIv.size() <= 64 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidCall(data) {
+      return isValidSlot(data.callerSlot) &&
+             data.callerUid is string && data.callerUid.size() >= 1 && data.callerUid.size() <= 128 &&
+             isValidSlot(data.calleeSlot) &&
+             data.callerSlot != data.calleeSlot &&
+             isValidMemberUids(data.memberUids) &&
+             data.callType is string && (data.callType == 'VOICE' || data.callType == 'VIDEO') &&
+             data.status is string && (data.status == 'RINGING' || data.status == 'ACTIVE' || data.status == 'ENDED' || data.status == 'REJECTED') &&
+             data.offerCiphertext is string && data.offerCiphertext.size() >= 1 && data.offerCiphertext.size() <= 64000 &&
+             data.offerIv is string && data.offerIv.size() >= 1 && data.offerIv.size() <= 64 &&
+             (!('answerCiphertext' in data) || (data.answerCiphertext is string && data.answerCiphertext.size() <= 64000)) &&
+             (!('answerIv' in data) || (data.answerIv is string && data.answerIv.size() <= 64)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidIceCandidate(data) {
+      return data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
+             isValidSlot(data.senderSlot) &&
+             isValidMemberUids(data.memberUids) &&
+             data.candidateCiphertext is string && data.candidateCiphertext.size() >= 1 && data.candidateCiphertext.size() <= 8000 &&
+             data.candidateIv is string && data.candidateIv.size() >= 1 && data.candidateIv.size() <= 64 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /channels/{channelId} {
+      allow get: if isSignedIn() &&
+                    isValidId(channelId) &&
+                    (resource == null || request.auth.uid in existing().memberUids || existing().memberUids.size() < 2);
+
+      allow list: if isSignedIn() && request.auth.uid in existing().memberUids;
+
+      allow create: if isSignedIn() &&
+                       isValidId(channelId) &&
+                       incoming().ownerUid == request.auth.uid &&
+                       request.auth.uid in incoming().memberUids &&
+                       incoming().memberUids.size() == 1 &&
+                       incoming().keys().hasAll(['ownerUid', 'memberUids', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['ownerUid', 'memberUids', 'slot1PublicKey', 'slot2PublicKey', 'createdAt', 'updatedAt']) &&
+                       isValidChannel(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(channelId) &&
+                       isValidChannel(incoming()) &&
+                       incoming().ownerUid == existing().ownerUid &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (request.auth.uid in existing().memberUids &&
+                          incoming().memberUids == existing().memberUids &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['slot1PublicKey', 'slot2PublicKey', 'updatedAt'])) ||
+                         (existing().memberUids.size() < 2 &&
+                          !(request.auth.uid in existing().memberUids) &&
+                          request.auth.uid in incoming().memberUids &&
+                          incoming().memberUids.hasAll(existing().memberUids) &&
+                          incoming().memberUids.size() == existing().memberUids.size() + 1 &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['memberUids', 'slot1PublicKey', 'slot2PublicKey', 'updatedAt']))
+                       );
+
+      allow delete: if false;
+
+      match /presence/{slotId} {
+        allow get: if isSignedIn() &&
+                      isValidId(channelId) &&
+                      isValidSlot(slotId) &&
+                      (resource == null || request.auth.uid in existing().memberUids ||
+                       (exists(/databases/$(database)/documents/channels/$(channelId)) &&
+                        request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.memberUids));
+
+        allow list: if isSignedIn() && request.auth.uid in existing().memberUids;
+
+        allow create: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidSlot(slotId) &&
+                         incoming().slotId == slotId &&
+                         incoming().authUid == request.auth.uid &&
+                         request.auth.uid in incoming().memberUids &&
+                         exists(/databases/$(database)/documents/channels/$(channelId)) &&
+                         request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.memberUids &&
+                         incoming().keys().hasAll(['slotId', 'authUid', 'memberUids', 'online', 'publicKey', 'lastActiveMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['slotId', 'authUid', 'memberUids', 'online', 'publicKey', 'lastActiveMillis', 'typing', 'typingAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidPresence(incoming());
+
+        allow update: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidSlot(slotId) &&
+                         isValidPresence(incoming()) &&
+                         incoming().slotId == existing().slotId &&
+                         incoming().createdAt == existing().createdAt &&
+                         request.auth.uid in incoming().memberUids &&
+                         (request.auth.uid in existing().memberUids ||
+                          (exists(/databases/$(database)/documents/channels/$(channelId)) &&
+                           request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.memberUids)) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['authUid', 'memberUids', 'online', 'publicKey', 'lastActiveMillis', 'typing', 'typingAtMillis', 'updatedAt']);
+
+        allow delete: if false;
+      }
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn() &&
+                      isValidId(channelId) &&
+                      isValidId(messageId) &&
+                      request.auth.uid in existing().memberUids;
+
+        allow list: if isSignedIn() && request.auth.uid in existing().memberUids;
+
+        allow create: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidId(messageId) &&
+                         incoming().senderUid == request.auth.uid &&
+                         request.auth.uid in incoming().memberUids &&
+                         exists(/databases/$(database)/documents/channels/$(channelId)) &&
+                         request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.memberUids &&
+                         incoming().keys().hasAll(['senderSlot', 'senderUid', 'memberUids', 'msgType', 'ciphertext', 'iv', 'ephemeralKey', 'mediaChunkCount', 'edited', 'expiresAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['senderSlot', 'senderUid', 'memberUids', 'msgType', 'ciphertext', 'iv', 'ephemeralKey', 'replyToId', 'replySenderSlot', 'replyCiphertext', 'replyIv', 'mediaChunkCount', 'mediaMimeType', 'mediaSizeBytes', 'edited', 'reactions', 'expiresAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidMessage(incoming());
+
+        allow update: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidId(messageId) &&
+                         isValidMessage(incoming()) &&
+                         request.auth.uid in existing().memberUids &&
+                         incoming().senderUid == existing().senderUid &&
+                         incoming().senderSlot == existing().senderSlot &&
+                         incoming().msgType == existing().msgType &&
+                         incoming().createdAt == existing().createdAt &&
+                         (
+                           (existing().senderUid == request.auth.uid &&
+                            incoming().edited == true &&
+                            incoming().diff(existing()).affectedKeys().hasOnly(['ciphertext', 'iv', 'ephemeralKey', 'edited', 'updatedAt'])) ||
+                           (incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'updatedAt'])) ||
+                           (incoming().diff(existing()).affectedKeys().hasOnly(['memberUids', 'updatedAt']) &&
+                            incoming().memberUids.hasAll(existing().memberUids))
+                         );
+
+        allow delete: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidId(messageId) &&
+                         request.auth.uid in existing().memberUids;
+
+        match /chunks/{chunkId} {
+          allow get: if isSignedIn() &&
+                        isValidId(channelId) &&
+                        isValidId(messageId) &&
+                        isValidId(chunkId) &&
+                        request.auth.uid in existing().memberUids;
+
+          allow list: if isSignedIn() && request.auth.uid in existing().memberUids;
+
+          allow create: if isSignedIn() &&
+                           isValidId(channelId) &&
+                           isValidId(messageId) &&
+                           isValidId(chunkId) &&
+                           incoming().senderUid == request.auth.uid &&
+                           request.auth.uid in incoming().memberUids &&
+                           exists(/databases/$(database)/documents/channels/$(channelId)) &&
+                           request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.memberUids &&
+                           incoming().keys().hasAll(['senderUid', 'memberUids', 'chunkIndex', 'dataCiphertext', 'dataIv', 'createdAt']) &&
+                           incoming().keys().hasOnly(['senderUid', 'memberUids', 'chunkIndex', 'dataCiphertext', 'dataIv', 'createdAt']) &&
+                           isValidMediaChunk(incoming());
+
+          allow update: if false;
+
+          allow delete: if isSignedIn() &&
+                           isValidId(channelId) &&
+                           isValidId(messageId) &&
+                           isValidId(chunkId) &&
+                           request.auth.uid in existing().memberUids;
+        }
+      }
+
+      match /calls/{callId} {
+        allow get: if isSignedIn() &&
+                      isValidId(channelId) &&
+                      isValidId(callId) &&
+                      request.auth.uid in existing().memberUids;
+
+        allow list: if isSignedIn() && request.auth.uid in existing().memberUids;
+
+        allow create: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidId(callId) &&
+                         incoming().callerUid == request.auth.uid &&
+                         request.auth.uid in incoming().memberUids &&
+                         incoming().status == 'RINGING' &&
+                         exists(/databases/$(database)/documents/channels/$(channelId)) &&
+                         request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)).data.memberUids &&
+                         incoming().keys().hasAll(['callerSlot', 'callerUid', 'calleeSlot', 'memberUids', 'callType', 'status', 'offerCiphertext', 'offerIv', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['callerSlot', 'callerUid', 'calleeSlot', 'memberUids', 'callType', 'status', 'offerCiphertext', 'offerIv', 'answerCiphertext', 'answerIv', 'createdAt', 'updatedAt']) &&
+                         isValidCall(incoming());
+
+        allow update: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidId(callId) &&
+                         isValidCall(incoming()) &&
+                         request.auth.uid in existing().memberUids &&
+                         existing().status != 'ENDED' &&
+                         existing().status != 'REJECTED' &&
+                         incoming().callerUid == existing().callerUid &&
+                         incoming().callerSlot == existing().callerSlot &&
+                         incoming().calleeSlot == existing().calleeSlot &&
+                         incoming().callType == existing().callType &&
+                         incoming().createdAt == existing().createdAt &&
+                         (
+                           (incoming().status == 'ACTIVE' &&
+                            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'answerCiphertext', 'answerIv', 'updatedAt'])) ||
+                           ((incoming().status == 'ENDED' || incoming().status == 'REJECTED') &&
+                            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+                         );
+
+        allow delete: if isSignedIn() &&
+                         isValidId(channelId) &&
+                         isValidId(callId) &&
+                         request.auth.uid in existing().memberUids;
+
+        match /candidates/{candId} {
+          allow get: if isSignedIn() &&
+                        isValidId(channelId) &&
+                        isValidId(callId) &&
+                        isValidId(candId) &&
+                        request.auth.uid in existing().memberUids;
+
+          allow list: if isSignedIn() && request.auth.uid in existing().memberUids;
+
+          allow create: if isSignedIn() &&
+                           isValidId(channelId) &&
+                           isValidId(callId) &&
+                           isValidId(candId) &&
+                           incoming().senderUid == request.auth.uid &&
+                           request.auth.uid in incoming().memberUids &&
+                           exists(/databases/$(database)/documents/channels/$(channelId)/calls/$(callId)) &&
+                           request.auth.uid in get(/databases/$(database)/documents/channels/$(channelId)/calls/$(callId)).data.memberUids &&
+                           incoming().keys().hasAll(['senderUid', 'senderSlot', 'memberUids', 'candidateCiphertext', 'candidateIv', 'createdAt']) &&
+                           incoming().keys().hasOnly(['senderUid', 'senderSlot', 'memberUids', 'candidateCiphertext', 'candidateIv', 'createdAt']) &&
+                           isValidIceCandidate(incoming());
+
+          allow update: if false;
+
+          allow delete: if isSignedIn() &&
+                           isValidId(channelId) &&
+                           isValidId(callId) &&
+                           isValidId(candId) &&
+                           request.auth.uid in existing().memberUids;
+        }
+      }
+    }
+  }
+}

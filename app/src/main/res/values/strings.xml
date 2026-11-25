@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Shan</string>
+    <string name="login_title">Shan</string>
+    <string name="label_user">User</string>
+    <string name="label_password">Password</string>
+    <string name="action_login">Sisteme Giriş Yap</string>
+    <string name="auth_success_banner">Sisteme Başarıyla Giriş Yapıldı</string>
+    <string name="loading_text">Loading...</string>
+    <string name="google_tunnel_title">Şifreli Bulut Tüneli</string>
+    <string name="google_tunnel_desc">Gerçek zamanlı şifreli mesajlaşma ve arama sinyalleşmesi için Google oturumunuzla kanalı doğrulayın.</string>
+    <string name="sign_in_with_google">Google ile Doğrula</string>
+    <string name="notification_channel_name">Shan Sistem Bildirimleri</string>
+    <string name="notification_title">Shan</string>
+    <string name="notification_hidden_body">Yeni sistem bildirimi</string>
+    <string name="e2ee_protocol_badge">ECDH-P256 + AES-256-GCM • 24s Oto-Silme</string>
+    <string name="content_desc_shan_logo">Shan Logosu</string>
+    <string name="content_desc_voice_call">Sesli Arama</string>
+    <string name="content_desc_video_call">Görüntülü Arama</string>
+    <string name="content_desc_attach_media">Fotoğraf veya Video Ekle</string>
+    <string name="content_desc_attach_file">Dosya Ekle</string>
+    <string name="content_desc_send_message">Şifreli Mesaj Gönder</string>
+    <string name="content_desc_lock_session">Oturumu Kilitle</string>
+    <string name="content_desc_toggle_theme">Tema Değiştir</string>
+</resources>

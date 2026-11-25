@@ -1,0 +1,6 @@
+{
+  "name": "Shan",
+  "description": "End-to-end encrypted private two-person chat with ephemeral 24h messages, voice and video calls, and zero-storage privacy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
