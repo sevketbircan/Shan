@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "192812483059",
-    "project_id": "gen-lang-client-0953477015",
-    "storage_bucket": "gen-lang-client-0953477015.firebasestorage.app"
+    "project_number": "594032859951",
+    "project_id": "shan-bae27",
+    "storage_bucket": "shan-bae27.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:192812483059:android:85d89a87352a803dc41286",
+        "mobilesdk_app_id": "1:594032859951:android:b7ae3ea9672e492f6fdfda",
         "android_client_info": {
           "package_name": "com.aistudio.shanchat.kxmpzq"
         }
       },
       "oauth_client": [
         {
-          "client_id": "192812483059-ale9i3964ofq8qo5tcdg20k5rqmvj6qk.apps.googleusercontent.com",
+          "client_id": "594032859951-cli7bsh0jmmf2q875e35ea1fhu1gakcv.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.aistudio.shanchat.kxmpzq",
-            "certificate_hash": "cead2c1d64e849e467387b0fda39dea8bb9abd30"
+            "certificate_hash": "5819e14ace52cb1fc70850efa05637bcfda2e18b"
           }
         },
         {
-          "client_id": "192812483059-8n70q5svj3nl7d9tdn7oc5ta7rd5uqig.apps.googleusercontent.com",
+          "client_id": "594032859951-qbltrhugupcl4tm6jrtflf1uls0bbhed.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCkPIjklUzGqmnxOttY5DtyrAoRBr5YVGM"
+          "current_key": "AIzaSyBBn1RNXB306Vck3pMi4WIkRq9uY1oY-8s"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "192812483059-8n70q5svj3nl7d9tdn7oc5ta7rd5uqig.apps.googleusercontent.com",
+              "client_id": "594032859951-qbltrhugupcl4tm6jrtflf1uls0bbhed.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
