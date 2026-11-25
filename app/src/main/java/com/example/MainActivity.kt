@@ -203,6 +203,9 @@ fun ShanAppRoot(auth: FirebaseAuth = Firebase.auth) {
                     onLockBackToLogin = {
                         activeSession = null
                         bootAnimationDone = false
+                    },
+                    onSuppressNextBackgroundLock = { suppress ->
+                        suppressNextBackgroundLock = suppress
                     }
                 )
             }

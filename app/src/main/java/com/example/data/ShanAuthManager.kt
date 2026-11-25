@@ -67,7 +67,8 @@ object ShanAuthManager {
 
         scope.launch {
             try {
-                val cred = credentialManager.getCredential(context, request).credential
+                val targetContext = context.findActivity() ?: context
+                val cred = credentialManager.getCredential(targetContext, request).credential
                 if (cred is CustomCredential && cred.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val token = GoogleIdTokenCredential.createFrom(cred.data).idToken
                     Firebase.auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).await()
@@ -75,6 +76,8 @@ object ShanAuthManager {
                 } else {
                     onUnauthenticated()
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (_: Exception) {
                 onUnauthenticated()
             }
@@ -87,12 +90,12 @@ object ShanAuthManager {
         onAuthSuccess: () -> Unit,
         onAuthError: (String) -> Unit,
         scope: CoroutineScope,
-        onAuthCancelled: () -> Unit = {}
+        onAuthCancelled: (String?) -> Unit = {}
     ) {
         val clientId = try {
             context.getString(R.string.default_web_client_id)
         } catch (_: Exception) {
-            onAuthError("Google Sign-In configuration missing: default_web_client_id not found")
+            onAuthError("Google Sign-In yapılandırması eksik: default_web_client_id bulunamadı")
             return
         }
         val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()
@@ -117,7 +120,9 @@ object ShanAuthManager {
                 }
             } catch (e: GetCredentialCancellationException) {
                 Log.w(TAG, "Google Sign-In flow cancelled or dismissed: ${e.message}", e)
-                onAuthCancelled()
+                onAuthCancelled(e.message)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Google Sign-In failed", e)
                 onAuthError(e.localizedMessage ?: "Google girişi başarısız oldu")

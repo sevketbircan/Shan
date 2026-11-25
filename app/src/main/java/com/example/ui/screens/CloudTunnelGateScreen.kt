@@ -55,7 +55,8 @@ import com.example.ui.theme.LocalShanColors
 fun CloudTunnelGateScreen(
     privateNick: String,
     onAuthSuccess: () -> Unit,
-    onLockBackToLogin: () -> Unit
+    onLockBackToLogin: () -> Unit,
+    onSuppressNextBackgroundLock: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -139,20 +140,30 @@ fun CloudTunnelGateScreen(
                         onClick = {
                             isSigningIn = true
                             authError = null
+                            onSuppressNextBackgroundLock(true)
                             ShanAuthManager.onGoogleSignInClicked(
                                 context = context,
                                 credentialManager = credentialManager,
                                 onAuthSuccess = {
+                                    onSuppressNextBackgroundLock(false)
                                     isSigningIn = false
                                     onAuthSuccess()
                                 },
                                 onAuthError = { msg ->
+                                    onSuppressNextBackgroundLock(false)
                                     isSigningIn = false
                                     authError = msg
                                 },
                                 scope = scope,
-                                onAuthCancelled = {
+                                onAuthCancelled = { reason ->
+                                    onSuppressNextBackgroundLock(false)
                                     isSigningIn = false
+                                    val detail = reason?.trim()?.takeIf { it.isNotEmpty() }
+                                    authError = if (detail != null) {
+                                        "Google doğrulaması iptal edildi veya reddedildi ($detail). APK imza anahtarını (debug.keystore) ve seçilen hesabın test iznini kontrol edin."
+                                    } else {
+                                        "Google doğrulaması tamamlanamadı. Lütfen tekrar deneyin."
+                                    }
                                 }
                             )
                         },
